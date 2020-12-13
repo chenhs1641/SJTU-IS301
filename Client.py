@@ -1,8 +1,6 @@
-import time
 import _thread
 import Files
 from socket import *
-from tkinter import *
 from tkinter import messagebox
 from tkinter.filedialog import *
 from time import ctime
@@ -21,99 +19,98 @@ class Init(object):
         self.root = Tk()
         self.root.title('Welcome to Chatting Room!')
 
-        self.frame1 = Frame(self.root, bd=18)
-        self.frame1.grid(row=0, column=0)
+        self.frame_all = Frame(self.root, bd=18)
+        self.frame_all.grid(row=0, column=0)
 
-        self.frame2 = Frame(self.frame1)
-        self.frame2.grid(row=0, column=0)
+        self.frame_connect = Frame(self.frame_all)
+        self.frame_connect.grid(row=0, column=0)
+        self.label_connect = Label(self.frame_all, text='Please connect first.')
+        self.label_connect.grid(row=1, column=0, pady=10)
+        self.frame_addr = Frame(self.frame_connect, bd=5)
+        self.frame_addr.grid(row=0, column=0)
+        self.button_connect = Button(self.frame_connect, text='CONNECT',
+                                     height=2, width=15, command=self.connect)
+        self.button_connect.grid(row=0, column=1, padx=5)
 
-        self.label4 = Label(self.frame1, text='Please connect first.')
-        self.label4.grid(row=1, column=0, pady=10)
+        self.label_ip = Label(self.frame_addr, text='IP', width=8)
+        self.label_ip.grid(row=0, column=0)
+        self.entry_ip = Entry(self.frame_addr, width=15)
+        self.entry_ip.insert(0, '127.0.0.1')
+        self.entry_ip.grid(row=0, column=1)
+        self.label_port = Label(self.frame_addr, text='PORT', width=8)
+        self.label_port.grid(row=1, column=0)
+        self.entry_port = Entry(self.frame_addr, width=15)
+        self.entry_port.insert(0, '12000')
+        self.entry_port.grid(row=1, column=1)
 
-        self.frame4 = Frame(self.frame1, bd=10)
-        self.frame4.grid(row=2, column=0)
+        self.frame_uid = Frame(self.frame_all, bd=10)
+        self.frame_uid.grid(row=2, column=0)
+        self.label_uid = Label(self.frame_uid, text='UID', width=8)
+        self.label_uid.grid(row=0, column=0, pady=5)
+        self.entry_uid = Entry(self.frame_uid, width=20)
+        self.entry_uid.insert(0, '1')
+        self.entry_uid.grid(row=0, column=1, pady=5)
 
-        self.frame3 = Frame(self.frame2, bd=5)
-        self.frame3.grid(row=0, column=0)
-
-        self.label1 = Label(self.frame3, text='IP', width=8)
-        self.label1.grid(row=0, column=0)
-        self.entry1 = Entry(self.frame3, width=15)
-        self.entry1.insert(0, '127.0.0.1')
-        self.entry1.grid(row=0, column=1)
-        self.label2 = Label(self.frame3, text='PORT', width=8)
-        self.label2.grid(row=1, column=0)
-        self.entry2 = Entry(self.frame3, width=15)
-        self.entry2.insert(0, '12000')
-        self.entry2.grid(row=1, column=1)
-
-        self.button1 = Button(self.frame2, text='CONNECT', height=2, width=15, command=self.connect)
-        self.button1.grid(row=0, column=1, padx=5)
-
-        self.label3 = Label(self.frame4, text='UID', width=8)
-        self.label3.grid(row=0, column=0, pady=5)
-        self.entry3 = Entry(self.frame4, width=20)
-        self.entry3.insert(0, '123456')
-        self.entry3.grid(row=0, column=1, pady=5)
-
-        self.button2 = Button(self.frame1, text='LOG IN/REGISTER', width=30, command=self.login)
-        self.button2.grid(row=3, column=0)
-
-        self.label5 = Label(self.frame1, text='Please insert UID, new UIDs '
-                                              'will be automatically registered.')
-        self.label5.grid(row=4, column=0, pady=15)
+        self.button_login = Button(self.frame_all, text='LOG IN/REGISTER', width=30,
+                                   command=self.login)
+        self.button_login.grid(row=3, column=0)
+        self.label_login = Label(self.frame_all, text='Please insert UID, new UIDs '
+                                                 'will be automatically registered.')
+        self.label_login.grid(row=4, column=0, pady=15)
 
         self.root.mainloop()
 
     def message(self):
         self.root = Tk()
         self.root.title('Chatting')
-        self.frame1 = Frame(self.root, bd=10)
-        self.frame1.grid(row=0, column=0)
+        self.frame_all = Frame(self.root, bd=10)
+        self.frame_all.grid(row=0, column=0)
 
-        self.frame2 = Frame(self.frame1)
-        self.frame2.grid(row=0, column=0)
-        self.frame3 = Frame(self.frame1)
-        self.frame3.grid(row=0, column=1, padx=15)
+        self.frame_left = Frame(self.frame_all)
+        self.frame_left.grid(row=0, column=0)
+        self.frame_right = Frame(self.frame_all)
+        self.frame_right.grid(row=0, column=1, padx=15)
 
-        self.text1 = Text(self.frame2, height=20, width=54, wrap=WORD)
-        self.text1.grid(row=0, column=0, columnspan=2)
-        self.scrollbar1 = Scrollbar(self.frame2, width=20)
-        self.scrollbar1.grid(row=0, column=2)
-        self.scrollbar1.config(command=self.text1.yview)
+        self.text_message = Text(self.frame_left, height=25, width=54, wrap=WORD)
+        self.text_message.grid(row=0, column=0, columnspan=2)
+        self.scrollbar_message = Scrollbar(self.frame_left, width=20)
+        self.scrollbar_message.grid(row=0, column=2)
+        self.scrollbar_message.config(command=self.text_message.yview)
 
-        self.entry1 = Entry(self.frame2, width=44)
-        self.entry1.grid(row=1, column=0, pady=10)
-        self.button1 = Button(self.frame2, width=8, text='SEND', command=self.send)
-        self.button1.grid(row=1, column=1, pady=10)
+        self.entry_send = Entry(self.frame_left, width=44)
+        self.entry_send.grid(row=1, column=0, pady=10)
+        self.button_send = Button(self.frame_left, width=8, text='SEND', command=self.send)
+        self.button_send.grid(row=1, column=1, pady=10)
 
-        self.label1 = Label(self.frame2, text='Click Browse and select a file to send ')
-        self.label1.grid(row=2, column=0, pady=10, stick=W)
-        self.button2 = Button(self.frame2, width=8, text='Browse', command=self.send_file)
-        self.button2.grid(row=2, column=1, pady=10)
+        self.frame_function = Frame(self.frame_left)
+        self.frame_function.grid(row=2, column=0, columnspan=2)
+        self.button_sendfile = Button(self.frame_function, width=10, text='Send a file',
+                                      command=self.send_file)
+        self.button_sendfile.grid(row=0, column=0)
 
-        self.label2 = Label(self.frame3, width=14, text='UID:' + self.uid_me)
-        self.label2.grid(row=1, column=0)
-        self.button3 = Button(self.frame3, text='LOG OUT', width=8, command=self.logout)
-        self.button3.grid(row=1, column=1)
+        self.label_uid = Label(self.frame_right, width=14, text='UID:' + self.uid_me)
+        self.label_uid.grid(row=1, column=0)
+        self.button_logout = Button(self.frame_right, text='LOG OUT', width=8, command=self.logout)
+        self.button_logout.grid(row=1, column=1)
 
-        self.label3 = Label(self.frame3, text='Contacts', bd=5)
-        self.label3.grid(row=2, column=0, columnspan=2)
+        self.label_contacts = Label(self.frame_right, text='Contacts', bd=5)
+        self.label_contacts.grid(row=2, column=0, columnspan=2)
+        self.listbox_contacts = Listbox(self.frame_right, height=14, width=24)
+        self.listbox_contacts.insert(END, '1')
+        self.listbox_contacts.grid(row=3, column=0, columnspan=2)
+        self.scrollbar_contacts = Scrollbar(self.frame_right, width=20)
+        self.scrollbar_contacts.grid(row=3, column=2)
+        self.scrollbar_contacts.config(command=self.listbox_contacts.yview)
 
-        self.listbox1 = Listbox(self.frame3, height=14, width=24)
-        self.listbox1.insert(END, '000000')
-        self.listbox1.grid(row=3, column=0, columnspan=2)
-        self.scrollbar2 = Scrollbar(self.frame3, width=20)
-        self.scrollbar2.grid(row=3, column=2)
-        self.scrollbar2.config(command=self.listbox1.yview)
+        self.button_contact = Button(self.frame_right, width=23, text='Contact',
+                                     command=self.contact)
+        self.button_contact.grid(row=4, column=0, columnspan=2, pady=18)
 
-        self.button4 = Button(self.frame3, width=23, text='Contact', command=self.contact)
-        self.button4.grid(row=4, column=0, columnspan=2, pady=12)
-
-        self.entry3 = Entry(self.frame3, width=14)
-        self.entry3.grid(row=5, column=0)
-        self.button5 = Button(self.frame3, width=8, text='Insert', command=self.insert)
-        self.button5.grid(row=5, column=1)
+        self.entry_insert = Entry(self.frame_right, width=14)
+        self.entry_insert.grid(row=5, column=0)
+        self.button_insert = Button(self.frame_right, width=8, text='Insert',
+                                    command=self.insert)
+        self.button_insert.grid(row=5, column=1)
 
         _thread.start_new_thread(self.receiving, ())
         _thread.start_new_thread(self.recv, ())
@@ -121,8 +118,8 @@ class Init(object):
         self.root.mainloop()
 
     def connect(self):
-        ip = self.entry1.get()
-        port = self.entry2.get()
+        ip = self.entry_ip.get()
+        port = self.entry_port.get()
         addr = (ip, int(port))
         try:
             self.tcp_socket.connect(addr)
@@ -132,7 +129,7 @@ class Init(object):
             messagebox.showinfo('Success', 'Successfully connected!')
 
     def login(self):
-        self.uid_me = self.entry3.get()
+        self.uid_me = self.entry_uid.get()
         if self.uid_me.isdigit():
             self.tcp_socket.send(self.uid_me.encode('utf-8'))
             self.root.destroy()
@@ -144,33 +141,33 @@ class Init(object):
         self.default()
 
     def insert(self):
-        uid_new = self.entry3.get()
+        uid_new = self.entry_uid.get()
         if uid_new.isdigit():
-            self.listbox1.insert(END, uid_new)
+            self.listbox_contacts.insert(END, uid_new)
 
     def contact(self):
-        self.uid_chat = self.listbox1.get(self.listbox1.curselection())
+        self.uid_chat = self.listbox_contacts.get(self.listbox_contacts.curselection())
         self.tcp_socket.send(self.uid_chat.encode())
-        self.text1.insert(END, '\n->Now try to contact UID '+self.uid_chat+' at '+ctime()+'\n')
-        self.text1.see(END)
+        self.text_message.insert(END, '\n->Now try to contact UID ' + self.uid_chat
+                                 + ' at ' + ctime() + '\n')
+        self.text_message.see(END)
 
     def send(self):
-        message_to_send = '!' + self.entry1.get()
-        self.entry1.delete(0, END)
+        message_to_send = '!' + self.entry_send.get()
+        self.entry_send.delete(0, END)
         if message_to_send:
             self.tcp_socket.send(message_to_send.encode())
-            self.text1.insert(END, '\n->' + self.uid_me + ' send to '
-                              + self.uid_chat + ' at ' + ctime() + '\n')
-            self.text1.insert(END, message_to_send[1:] + '\n')
-            self.text1.see(END)
+            self.text_message.insert(END, '\n->' + self.uid_me + ' send to '
+                                     + self.uid_chat + ' at ' + ctime() + '\n')
+            self.text_message.insert(END, message_to_send[1:] + '\n')
+            self.text_message.see(END)
 
     def recv(self):
         while 1:
-            # time.sleep(1)
             if self.queue.empty() is False:
                 message_to_recv = self.queue.get()
-                self.text1.insert(END, message_to_recv)
-                self.text1.see(END)
+                self.text_message.insert(END, message_to_recv)
+                self.text_message.see(END)
 
     def receiving(self):
         while 1:
@@ -196,8 +193,7 @@ class Init(object):
                             line = self.tcp_socket.recv(BUFSIZE)
                             f.write(line)
                             recv_size += len(line)
-                    #         print(recv_size, '/', file_size)
-                    # return file_size, file_name
+                    self.queue.put("\n->You have successfully received the file!\n")
                 else:
                     self.queue.put(message_received)
             except timeout:
@@ -207,9 +203,10 @@ class Init(object):
         self.file_name = askopenfilename()
         if os.path.isfile(self.file_name):
             Files.client_send(self.tcp_socket, self.file_name)
-            self.text1.insert(END, '\n->' + self.uid_me + ' send file:\n\n' + self.file_name
-                              + '\n\n->to ' + self.uid_chat + ' at ' + ctime() + '\n')
-            self.text1.see(END)
+            self.text_message.insert(END, '\n->' + self.uid_me + ' send file:\n\n'
+                                     + self.file_name + '\n\n->to ' + self.uid_chat
+                                     + ' at ' + ctime() + '\n')
+            self.text_message.see(END)
 
 def main():
     init = Init()

@@ -53,17 +53,14 @@ def send():
         for eachUser in active_user:
             if eachUser.offline:
                 active_user.remove(eachUser)
-                # del eachUser
                 continue
             while user_queue[eachUser.uid].qsize():
                 message_to_send = user_queue[eachUser.uid].get()
-                # print(message_to_send)
                 eachUser.socket.send(message_to_send.encode('utf-8'))
                 time.sleep(0.1)
                 if message_to_send.startswith('FILE'):
                     file_header = message_to_send.split(',')
                     message_to_send = user_queue[eachUser.uid].get()
-                    # print(message_to_send)
                     eachUser.socket.send(message_to_send.encode('utf-8'))
                     time.sleep(0.1)
                     while 1:
@@ -71,15 +68,12 @@ def send():
                             CONFIRM = False
                             break
                     file_size = int(file_header[2])
-                    # file_name = file_header[1]
                     recv_size = 0
                     while recv_size < file_size:
                         line = user_queue[eachUser.uid].get()
                         eachUser.socket.send(line)
                         recv_size += len(line)
-                        # print(recv_size, '/', file_size)
                     time.sleep(0.1)
-                    # return file_size, file_name
                 else:
                     pass
 
@@ -126,10 +120,10 @@ class User(object):
                         with open(send_file_name, 'rb') as f:
                             for line in f:
                                 user_queue[self.contact].put(line)
+                    os.remove(send_file_name)
                 else:
                     server_message = '\nCONTACT NEED TO CHOOSE!\n'
                     self.socket.send(server_message.encode('utf-8'))
-                # delete the file from path!!!
             elif message_received.isdigit():
                 if message_received in user_list:
                     self.contact = message_received
