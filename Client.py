@@ -141,7 +141,7 @@ class Init(object):
         self.default()
 
     def insert(self):
-        uid_new = self.entry_uid.get()
+        uid_new = self.entry_insert.get()
         if uid_new.isdigit():
             self.listbox_contacts.insert(END, uid_new)
 
@@ -207,6 +207,7 @@ class Init(object):
                                      + self.file_name + '\n\n->to ' + self.uid_chat
                                      + ' at ' + ctime() + '\n')
             self.text_message.see(END)
+
 
 def main():
     init = Init()
