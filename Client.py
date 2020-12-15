@@ -1,10 +1,10 @@
-import _thread
 import Files
+import threading
+from queue import Queue
 from socket import *
 from tkinter import messagebox
 from tkinter.filedialog import *
 from time import ctime
-from queue import Queue
 
 BUFSIZE = 1024
 
@@ -14,6 +14,7 @@ class Init(object):
         self.tcp_socket = socket(AF_INET, SOCK_STREAM)
         self.tcp_socket.settimeout(2)
         self.queue = Queue()
+        self.group_queue = Queue()
 
     def default(self):
         self.root = Tk()
@@ -55,7 +56,7 @@ class Init(object):
                                    command=self.login)
         self.button_login.grid(row=3, column=0)
         self.label_login = Label(self.frame_all, text='Please insert UID, new UIDs '
-                                                 'will be automatically registered.')
+                                                      'will be automatically registered.')
         self.label_login.grid(row=4, column=0, pady=15)
 
         self.root.mainloop()
@@ -87,10 +88,14 @@ class Init(object):
         self.button_sendfile = Button(self.frame_function, width=10, text='Send a file',
                                       command=self.send_file)
         self.button_sendfile.grid(row=0, column=0)
+        self.button_groupchat = Button(self.frame_function, width=10, text='Group chat',
+                                       command=self.group_chat)
+        self.button_groupchat.grid(row=0, column=1)
 
         self.label_uid = Label(self.frame_right, width=14, text='UID:' + self.uid_me)
         self.label_uid.grid(row=1, column=0)
-        self.button_logout = Button(self.frame_right, text='LOG OUT', width=8, command=self.logout)
+        self.button_logout = Button(self.frame_right, text='LOG OUT', width=8,
+                                    command=self.logout)
         self.button_logout.grid(row=1, column=1)
 
         self.label_contacts = Label(self.frame_right, text='Contacts', bd=5)
@@ -112,10 +117,58 @@ class Init(object):
                                     command=self.insert)
         self.button_insert.grid(row=5, column=1)
 
-        _thread.start_new_thread(self.receiving, ())
-        _thread.start_new_thread(self.recv, ())
+        thread_receiving = threading.Thread(target=self.receiving)
+        thread_recv = threading.Thread(target=self.recv)
+        thread_receiving.daemon = True
+        thread_recv.daemon = True
+        thread_receiving.start()
+        thread_recv.start()
 
         self.root.mainloop()
+
+    def group_chat(self):
+        self.root.withdraw()
+        self.group_root = Tk()
+        self.group_root.title('Group chat')
+
+        self.frame_group = Frame(self.group_root, bd=15)
+        self.frame_group.grid(row=0, column=0)
+        self.frame_group_left = Frame(self.frame_group)
+        self.frame_group_left.grid(row=0, column=0)
+        self.frame_group_right = Frame(self.frame_group)
+        self.frame_group_right.grid(row=0, column=1, padx=10)
+
+        self.text_group = Text(self.frame_group_left, height=25, width=54, wrap=WORD)
+        self.text_group.grid(row=0, column=0, columnspan=2)
+        self.scrollbar_group = Scrollbar(self.frame_group_left, width=20)
+        self.scrollbar_group.grid(row=0, column=2)
+        self.scrollbar_group.config(command=self.text_group.yview)
+
+        self.entry_group = Entry(self.frame_group_left, width=44)
+        self.entry_group.grid(row=1, column=0, pady=10)
+        self.button_send_group = Button(self.frame_group_left, width=8, text='Send',
+                                        command=self.send_group)
+        self.button_send_group.grid(row=1, column=1, pady=10)
+
+        self.label_users = Label(self.frame_group_right, text='Online users', bd=8)
+        self.label_users.grid(row=0, column=0)
+        self.listbox_users = Listbox(self.frame_group_right, height=16, width=24)
+        self.listbox_users.grid(row=1, column=0)
+        self.scrollbar_users = Scrollbar(self.frame_group_right, width=20)
+        self.scrollbar_users.grid(row=1, column=1)
+        self.scrollbar_users.config(command=self.listbox_users.yview)
+        self.button_quit = Button(self.frame_group_right, width=8, text='Quit',
+                                  command=self.quit)
+        self.button_quit.grid(row=2, column=0, pady=10)
+
+        send_server = 'JOIN,' + self.uid_me
+        self.tcp_socket.send(send_server.encode('utf-8'))
+
+        thread_recv_group = threading.Thread(target=self.recv_group)
+        thread_recv_group.daemon = True
+        thread_recv_group.start()
+
+        self.group_root.mainloop()
 
     def connect(self):
         ip = self.entry_ip.get()
@@ -153,34 +206,43 @@ class Init(object):
         self.text_message.see(END)
 
     def send(self):
-        message_to_send = '!' + self.entry_send.get()
-        self.entry_send.delete(0, END)
-        if message_to_send:
+        if self.entry_send.get():
+            message_to_send = '!' + self.entry_send.get()
+            self.entry_send.delete(0, END)
             self.tcp_socket.send(message_to_send.encode())
             self.text_message.insert(END, '\n->' + self.uid_me + ' send to '
                                      + self.uid_chat + ' at ' + ctime() + '\n')
             self.text_message.insert(END, message_to_send[1:] + '\n')
             self.text_message.see(END)
 
-    def recv(self):
-        while 1:
-            if self.queue.empty() is False:
-                message_to_recv = self.queue.get()
-                self.text_message.insert(END, message_to_recv)
-                self.text_message.see(END)
+    def send_file(self):
+        self.file_name = askopenfilename()
+        if os.path.isfile(self.file_name):
+            Files.client_send(self.tcp_socket, self.file_name)
+            self.text_message.insert(END, '\n->' + self.uid_me + ' send file:\n\n'
+                                     + self.file_name + '\n\n->to ' + self.uid_chat
+                                     + ' at ' + ctime() + '\n')
+            self.text_message.see(END)
+
+    def send_group(self):
+        if self.entry_group.get():
+            message_group = 'GROUP,' + self.uid_me + ',' + 'send at ' + ctime() +\
+                            ':\n' + self.entry_group.get()
+            self.entry_group.delete(0, END)
+            self.tcp_socket.send(message_group.encode('utf-8'))
 
     def receiving(self):
         while 1:
-            # time.sleep(0.1)
             try:
                 message_received = self.tcp_socket.recv(BUFSIZE).decode('utf-8')
-                # print(message_received)
-                if message_received.startswith('FILE'):
+                if message_received == 'REPEAT LOGIN':
+                    messagebox.showerror('Error', 'Repeat login!')
+                    self.root.destroy()
+                elif message_received.startswith('FILE'):
                     # HINT TO SAVE FILE!
                     message_header = message_received.split(',')
                     message_received = self.tcp_socket.recv(BUFSIZE).decode('utf-8')
                     self.queue.put(message_received)
-                    # print(self.tcp_socket)
                     messagebox.showinfo("Info", "Someone wants to send a file to you.\n"
                                                 "Please choose a path to save.")
                     self.tcp_socket.send("CONFIRM".encode('utf-8'))
@@ -194,19 +256,61 @@ class Init(object):
                             f.write(line)
                             recv_size += len(line)
                     self.queue.put("\n->You have successfully received the file!\n")
+                elif message_received.startswith('USERS'):
+                    online_list = message_received.split(',')
+                    for user in online_list:
+                        if user != 'USERS':
+                            while 1:
+                                try:
+                                    self.listbox_users.insert(END, user)
+                                    break
+                                except timeout:
+                                    pass
+                elif message_received.startswith('JOIN'):
+                    message = message_received.split(',')
+                    join_uid = message[1]
+                    self.group_queue.put('\n->UID: ' + join_uid + ' has joined group chat.\n')
+                    if self.uid_me != join_uid:
+                        self.listbox_users.insert(END, join_uid)
+                elif message_received.startswith('QUIT'):
+                    message = message_received.split(',')
+                    quit_uid = message[1]
+                    self.group_queue.put('\n->UID: ' + quit_uid + ' has quited group chat.\n')
+                    for i in range(0, self.listbox_users.size()):
+                        if self.listbox_users.get(i) == quit_uid:
+                            self.listbox_users.delete(i)
+                            break
+                elif message_received.startswith('GROUP'):
+                    message = message_received.split(',')
+                    speaker_uid = message[1]
+                    speak_content = message[2]
+                    self.group_queue.put('\n->User UID: ' + speaker_uid + ' ' +
+                                         speak_content + '\n')
                 else:
                     self.queue.put(message_received)
             except timeout:
                 pass
 
-    def send_file(self):
-        self.file_name = askopenfilename()
-        if os.path.isfile(self.file_name):
-            Files.client_send(self.tcp_socket, self.file_name)
-            self.text_message.insert(END, '\n->' + self.uid_me + ' send file:\n\n'
-                                     + self.file_name + '\n\n->to ' + self.uid_chat
-                                     + ' at ' + ctime() + '\n')
-            self.text_message.see(END)
+    def recv(self):
+        while 1:
+            if self.queue.empty() is False:
+                message_to_recv = self.queue.get()
+                self.text_message.insert(END, message_to_recv)
+                self.text_message.see(END)
+
+    def recv_group(self):
+        while 1:
+            if self.group_queue.empty() is False:
+                message_to_recv = self.group_queue.get()
+                self.text_group.insert(END, message_to_recv)
+                self.text_group.see(END)
+
+    def quit(self):
+        quit_message = 'QUIT,' + self.uid_me
+        self.tcp_socket.send(quit_message.encode('utf-8'))
+        self.group_root.destroy()
+        self.root.deiconify()
+        # stop thread!!!
 
 
 def main():

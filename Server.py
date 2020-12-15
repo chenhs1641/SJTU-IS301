@@ -1,10 +1,10 @@
+import Files
+import os
+import threading
+import time
 from queue import Queue
 from socket import *
 from time import ctime
-import os
-import time
-import _thread
-import Files
 
 BUFSIZE = 1024
 CONFIRM = False
@@ -19,6 +19,8 @@ user_list = []
 user_queue = {}
 active_user = []
 active_user_list = []
+group_active_user_list = []
+group_user_list = []
 
 
 def recv(this_tcp_socket):
@@ -36,7 +38,7 @@ def recv(this_tcp_socket):
             print(uid + ' signed up ' + ctime())
         else:
             if uid in active_user_list:
-                server_message = 'FROM SERVER:' + uid + ' already logged in'
+                server_message = 'REPEAT LOGIN'
                 this_tcp_socket.send(server_message.encode('utf-8'))
                 return None
             else:
@@ -52,6 +54,11 @@ def send():
     while True:
         for eachUser in active_user:
             if eachUser.offline:
+                if eachUser.uid in active_user_list:
+                    active_user_list.remove(eachUser.uid)
+                if eachUser.uid in group_active_user_list:
+                    group_active_user_list.remove(eachUser.uid)
+                print(eachUser.uid + ' is offline at ' + ctime())
                 active_user.remove(eachUser)
                 continue
             while user_queue[eachUser.uid].qsize():
@@ -84,7 +91,6 @@ class User(object):
         self.socket = user_socket
         self.uid = uid
         self.offline = False
-        self.disconnected = False
         self.contact = None
 
     def recv(self):
@@ -92,25 +98,21 @@ class User(object):
         while True:
             try:
                 message_received = self.socket.recv(BUFSIZE).decode('utf-8')
-            except timeout:
-                print(self.uid + ' disconnected')
-                active_user_list.remove(self.uid)
+            except:
                 self.offline = True
                 return None
             if message_received == 'CONFIRM':
                 CONFIRM = 1
             elif message_received == 'LOG OUT':
-                active_user_list.remove(self.uid)
-                print(self.uid + ' logged out ' + ctime())
                 self.offline = True
                 return None
             elif message_received.startswith('FILE'):
                 file_size, file_name = Files.server_recv(self.socket, message_received)
                 if self.contact is not None:
                     user_queue[self.contact].put(message_received)
-                    receive_message = '\n->' + 'Receive a file:\n\n' + file_name + '\n\n->from ' \
-                                      + self.uid + ', send to ' + self.contact + ' at ' \
-                                      + ctime() + '\n'
+                    receive_message = '\n->' + 'Receive a file:\n\n' + file_name +\
+                                      '\n\n->from ' + self.uid + ', send to ' +\
+                                      self.contact + ' at ' + ctime() + '\n'
                     user_queue[self.contact].put(receive_message)
                     send_file_name = './' + file_name
                     if not os.path.isfile(send_file_name):
@@ -129,10 +131,32 @@ class User(object):
                     self.contact = message_received
                 else:
                     self.socket.send('\nUID NOT FOUND!\n'.encode('utf-8'))
+            elif message_received.startswith('JOIN'):
+                group_header = message_received.split(',')
+                uid_group = group_header[1]
+                active_user_list.remove(uid_group)
+                group_active_user_list.append(uid_group)
+                in_group_uid = 'USERS'
+                for user in group_active_user_list:
+                    in_group_uid = in_group_uid + ',' + user
+                user_queue[uid_group].put(in_group_uid)
+                for user in group_active_user_list:
+                    user_queue[user].put('JOIN,' + uid_group)
+            elif message_received.startswith('QUIT'):
+                group_header = message_received.split(',')
+                uid_group = group_header[1]
+                group_active_user_list.remove(uid_group)
+                active_user_list.append(uid_group)
+                for user in group_active_user_list:
+                    user_queue[user].put('QUIT,' + uid_group)
+            elif message_received.startswith('GROUP'):
+                for user in group_active_user_list:
+                    user_queue[user].put(message_received)
             else:
                 if self.contact is not None:
                     message_received = '\n->' + 'Receive from ' + self.uid + ', send to '\
-                          + self.contact + ' at ' + ctime() + '\n' + message_received[1:] + '\n'
+                                       + self.contact + ' at ' + ctime() + '\n' +\
+                                       message_received[1:] + '\n'
                     user_queue[self.contact].put(message_received)
                 else:
                     server_message = '\nCONTACT NEED TO CHOOSE!\n'
@@ -140,11 +164,15 @@ class User(object):
 
 
 def main():
-    _thread.start_new_thread(send, ())
+    thread_send = threading.Thread(target=send)
+    thread_send.daemon = True
+    thread_send.start()
     while True:
         new_tcp_socket, new_addr = tcp_socket.accept()
         print('connected from ', new_addr, ctime())
-        _thread.start_new_thread(recv, (new_tcp_socket, ))
+        thread_recv = threading.Thread(target=recv(new_tcp_socket))
+        thread_recv.daemon = True
+        thread_recv.start()
 
 
 if __name__ == '__main__':
