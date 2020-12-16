@@ -101,8 +101,11 @@ class User(object):
             except:
                 self.offline = True
                 return None
-            if message_received == 'CONFIRM':
-                CONFIRM = 1
+            if message_received.isdigit():
+                if message_received in user_list:
+                    self.contact = message_received
+                else:
+                    self.socket.send('\nUID NOT FOUND!\n'.encode('utf-8'))
             elif message_received == 'LOG OUT':
                 self.offline = True
                 return None
@@ -126,11 +129,8 @@ class User(object):
                 else:
                     server_message = '\nCONTACT NEED TO CHOOSE!\n'
                     self.socket.send(server_message.encode('utf-8'))
-            elif message_received.isdigit():
-                if message_received in user_list:
-                    self.contact = message_received
-                else:
-                    self.socket.send('\nUID NOT FOUND!\n'.encode('utf-8'))
+            elif message_received == 'CONFIRM':
+                CONFIRM = 1
             elif message_received.startswith('JOIN'):
                 group_header = message_received.split(',')
                 uid_group = group_header[1]
@@ -152,11 +152,17 @@ class User(object):
             elif message_received.startswith('GROUP'):
                 for user in group_active_user_list:
                     user_queue[user].put(message_received)
+            elif message_received.startswith('EMOJI'):
+                if self.contact is not None:
+                    message_emoji = '\n->' + 'Receive emoji from ' + self.uid\
+                                    + ', send to ' + self.contact + ' at ' + ctime() + '\n'
+                    user_queue[self.contact].put(message_emoji)
+                    user_queue[self.contact].put(message_received)
             else:
                 if self.contact is not None:
                     message_received = '\n->' + 'Receive from ' + self.uid + ', send to '\
-                                       + self.contact + ' at ' + ctime() + '\n' +\
-                                       message_received[1:] + '\n'
+                                       + self.contact + ' at ' + ctime() + '\n'\
+                                       + message_received[1:] + '\n'
                     user_queue[self.contact].put(message_received)
                 else:
                     server_message = '\nCONTACT NEED TO CHOOSE!\n'
@@ -170,7 +176,7 @@ def main():
     while True:
         new_tcp_socket, new_addr = tcp_socket.accept()
         print('connected from ', new_addr, ctime())
-        thread_recv = threading.Thread(target=recv, args=(new_tcp_socket,))
+        thread_recv = threading.Thread(target=recv, args=(new_tcp_socket, ))
         thread_recv.daemon = True
         thread_recv.start()
 

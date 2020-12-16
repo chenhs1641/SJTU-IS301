@@ -67,6 +67,9 @@ class Init(object):
         self.frame_all = Frame(self.root, bd=10)
         self.frame_all.grid(row=0, column=0)
 
+        self.emoji_angry = PhotoImage(file='./emoji/angry.png')
+        self.emoji_excited = PhotoImage(file='./emoji/excited.png')
+
         self.frame_left = Frame(self.frame_all)
         self.frame_left.grid(row=0, column=0)
         self.frame_right = Frame(self.frame_all)
@@ -91,6 +94,9 @@ class Init(object):
         self.button_groupchat = Button(self.frame_function, width=10, text='Group chat',
                                        command=self.group_chat)
         self.button_groupchat.grid(row=0, column=1)
+        self.button_sendemoji = Button(self.frame_function, width=10, text='Emoji',
+                                   command=self.send_emoji)
+        self.button_sendemoji.grid(row=0, column=2)
 
         self.label_uid = Label(self.frame_right, width=14, text='UID:' + self.uid_me)
         self.label_uid.grid(row=1, column=0)
@@ -231,6 +237,37 @@ class Init(object):
             self.entry_group.delete(0, END)
             self.tcp_socket.send(message_group.encode('utf-8'))
 
+    def send_emoji(self):
+        self.emoji_root = Toplevel()
+        self.emoji_root.title('Please select emoji to send.')
+
+        self.frame_emoji = Frame(self.emoji_root, bd=30)
+        self.frame_emoji.grid(row=0, column=0)
+        self.button_angry = Button(self.frame_emoji, command=self.send_emoji_angry,
+                                   image=self.emoji_angry, relief=FLAT, bd=0)
+        self.button_excited = Button(self.frame_emoji, command=self.send_emoji_excited,
+                                     image=self.emoji_excited, relief=FLAT, bd=0)
+        self.button_angry.grid(row=0, column=0, padx=30)
+        self.button_excited.grid(row=0, column=1, padx=30)
+
+        self.emoji_root.mainloop()
+
+    def send_emoji_angry(self):
+        self.tcp_socket.send('EMOJI,ANGRY'.encode('utf-8'))
+        self.text_message.insert(END, '\n->' + self.uid_me + ' send emoji to '
+                                 + self.uid_chat + ' at ' + ctime() + '\n')
+        self.text_message.image_create(END, image=self.emoji_angry)
+        self.text_message.insert(END, '\n')
+        self.emoji_root.destroy()
+
+    def send_emoji_excited(self):
+        self.tcp_socket.send('EMOJI,EXCITED'.encode('utf-8'))
+        self.text_message.insert(END, '\n->' + self.uid_me + ' send emoji to '
+                                 + self.uid_chat + ' at ' + ctime() + '\n')
+        self.text_message.image_create(END, image=self.emoji_excited)
+        self.text_message.insert(END, '\n')
+        self.emoji_root.destroy()
+
     def receiving(self):
         while 1:
             try:
@@ -286,6 +323,15 @@ class Init(object):
                     speak_content = message[2]
                     self.group_queue.put('\n->User UID: ' + speaker_uid + ' ' +
                                          speak_content + '\n')
+                elif message_received.startswith('EMOJI'):
+                    message = message_received.split(',')
+                    emoji_name = message[1]
+                    if emoji_name == 'ANGRY':
+                        self.text_message.image_create(END, image=self.emoji_angry)
+                    elif emoji_name == 'EXCITED':
+                        self.text_message.image_create(END, image=self.emoji_excited)
+                    self.text_message.insert(END, '\n')
+                    self.text_message.see(END)
                 else:
                     self.queue.put(message_received)
             except timeout:
