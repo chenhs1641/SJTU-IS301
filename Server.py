@@ -170,7 +170,7 @@ def main():
     while True:
         new_tcp_socket, new_addr = tcp_socket.accept()
         print('connected from ', new_addr, ctime())
-        thread_recv = threading.Thread(target=recv(new_tcp_socket))
+        thread_recv = threading.Thread(target=recv, args=(new_tcp_socket,))
         thread_recv.daemon = True
         thread_recv.start()
 
