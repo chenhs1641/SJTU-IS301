@@ -1,4 +1,3 @@
-import Files
 import os
 import threading
 import time
@@ -110,7 +109,15 @@ class User(object):
                 self.offline = True
                 return None
             elif message_received.startswith('FILE'):
-                file_size, file_name = Files.server_recv(self.socket, message_received)
+                message_header = message_received.split(',')
+                file_size = int(message_header[2])
+                file_name = message_header[1]
+                with open('./' + file_name, 'wb') as f:
+                    recv_size = 0
+                    while recv_size < file_size:
+                        line = self.socket.recv(BUFSIZE)
+                        f.write(line)
+                        recv_size += len(line)
                 if self.contact is not None:
                     user_queue[self.contact].put(message_received)
                     receive_message = '\n->' + 'Receive a file:\n\n' + file_name +\
@@ -158,12 +165,13 @@ class User(object):
                                     + ', send to ' + self.contact + ' at ' + ctime() + '\n'
                     user_queue[self.contact].put(message_emoji)
                     user_queue[self.contact].put(message_received)
-            else:
+            elif message_received.startswith('MESSAGE'):
                 if self.contact is not None:
-                    message_received = '\n->' + 'Receive from ' + self.uid + ', send to '\
-                                       + self.contact + ' at ' + ctime() + '\n'\
-                                       + message_received[1:] + '\n'
-                    user_queue[self.contact].put(message_received)
+                    message_header = message_received.split(',')
+                    message_to_send = '\n->' + 'Receive from ' + self.uid + ', send to '\
+                                      + self.contact + ' at ' + ctime() + '\n'\
+                                      + message_header[1] + '\n'
+                    user_queue[self.contact].put(message_to_send)
                 else:
                     server_message = '\nCONTACT NEED TO CHOOSE!\n'
                     self.socket.send(server_message.encode('utf-8'))

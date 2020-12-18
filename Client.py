@@ -1,5 +1,5 @@
-import Files
 import threading
+import time
 from queue import Queue
 from socket import *
 from tkinter import messagebox
@@ -213,20 +213,32 @@ class Init(object):
 
     def send(self):
         if self.entry_send.get():
-            message_to_send = '!' + self.entry_send.get()
+            message_to_send = 'MESSAGE,' + self.entry_send.get()
             self.entry_send.delete(0, END)
             self.tcp_socket.send(message_to_send.encode())
             self.text_message.insert(END, '\n->' + self.uid_me + ' send to '
                                      + self.uid_chat + ' at ' + ctime() + '\n')
-            self.text_message.insert(END, message_to_send[1:] + '\n')
+            self.text_message.insert(END, message_to_send[9:] + '\n')
             self.text_message.see(END)
 
     def send_file(self):
-        self.file_name = askopenfilename()
-        if os.path.isfile(self.file_name):
-            Files.client_send(self.tcp_socket, self.file_name)
+        send_file_name = askopenfilename()
+        if os.path.isfile(send_file_name):
+            if not os.path.isfile(send_file_name):
+                print('file:', send_file_name, ' is not exists')
+                return
+            else:
+                send_file_size = os.path.getsize(send_file_name)
+                file_name = send_file_name.split('/')[-1]
+                header = 'FILE' + ',' + file_name + ',' + str(send_file_size)
+                self.tcp_socket.send(header.encode('utf-8'))
+                time.sleep(0.1)
+                with open(send_file_name, 'rb') as f:
+                    for line in f:
+                        self.tcp_socket.send(line)
+                time.sleep(0.1)
             self.text_message.insert(END, '\n->' + self.uid_me + ' send file:\n\n'
-                                     + self.file_name + '\n\n->to ' + self.uid_chat
+                                     + send_file_name + '\n\n->to ' + self.uid_chat
                                      + ' at ' + ctime() + '\n')
             self.text_message.see(END)
 
