@@ -218,7 +218,7 @@ class Init(object):
             self.tcp_socket.send(message_to_send.encode())
             self.text_message.insert(END, '\n->' + self.uid_me + ' send to '
                                      + self.uid_chat + ' at ' + ctime() + '\n')
-            self.text_message.insert(END, message_to_send[9:] + '\n')
+            self.text_message.insert(END, message_to_send[8:] + '\n')
             self.text_message.see(END)
 
     def send_file(self):

@@ -36,7 +36,7 @@ def recv(this_tcp_socket):
             user_queue[uid] = Queue()
             print(uid + ' signed up ' + ctime())
         else:
-            if uid in active_user_list:
+            if uid in active_user_list or uid in group_active_user_list:
                 server_message = 'REPEAT LOGIN'
                 this_tcp_socket.send(server_message.encode('utf-8'))
                 return None
