@@ -288,7 +288,6 @@ class Init(object):
                     messagebox.showerror('Error', 'Repeat login!')
                     self.root.destroy()
                 elif message_received.startswith('FILE'):
-                    # HINT TO SAVE FILE!
                     message_header = message_received.split(',')
                     message_received = self.tcp_socket.recv(BUFSIZE).decode('utf-8')
                     self.queue.put(message_received)
@@ -368,7 +367,6 @@ class Init(object):
         self.tcp_socket.send(quit_message.encode('utf-8'))
         self.group_root.destroy()
         self.root.deiconify()
-        # stop thread!!!
 
 
 def main():
